@@ -7,7 +7,7 @@ import useSWR from 'swr'
 
 import { useTranslation } from 'src/languages/components/useTranslation'
 import { Link } from 'src/frame/components/Link'
-import { sendEvent, EventType, startVisitTime } from 'src/events/components/events'
+import { sendEvent, EventType } from 'src/events/components/events'
 
 import styles from './Survey.module.scss'
 
@@ -82,6 +82,13 @@ export const Survey = () => {
     }
   }, [email])
 
+  useEffect(() => {
+    if (state === ViewState.NEXT && data?.comment !== comment.trim()) {
+      setState(ViewState.START)
+      setIsEmailError(false)
+    }
+  }, [comment])
+
   const { data, error, isLoading } = useSWR(
     state === ViewState.NEXT && comment.trim() ? '/api/events/survey/preview/v1' : null,
     async (url: string) => {
@@ -107,7 +114,7 @@ export const Survey = () => {
     },
   )
 
-  const hasPreview = !!data && !error
+  const hasPreview = !!data && !error && ViewState.NEXT
 
   function submit(evt: React.FormEvent) {
     evt.preventDefault()
@@ -215,7 +222,6 @@ export const Survey = () => {
                 {voteState === VoteState.YES && t`comment_yes_label`}
                 {voteState === VoteState.NO && t`comment_no_label`}
               </span>
-              <span className="text-normal color-fg-muted float-right ml-1">{t`optional`}</span>
             </label>
             <textarea
               className="form-control input-sm width-full"
@@ -318,7 +324,6 @@ function trackEvent(eventData: EventData) {
     survey_vote: eventData.vote,
     survey_comment: eventData.comment || undefined,
     survey_email: eventData.email || undefined,
-    survey_visit_duration: (Date.now() - startVisitTime) / 1000,
     survey_rating: eventData.rating,
   })
 }
